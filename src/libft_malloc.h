@@ -3,6 +3,8 @@
 
 # include <stddef.h>
 # include <unistd.h>
+# include <stdbool.h>
+# include <sys/mman.h>
 # include "../libft/headers/libft.h"
 
 # ifdef __linux__
@@ -29,14 +31,14 @@ typedef struct mzone_s {
     mchunk_t chunks[MALLOC_PER_ZONE];
     void *addr;
     bool is_full;
-    mzone_t *next;
+    struct mzone_s *next;
 } mzone_t;
 
 typedef struct mzone_no_chunk_s {
     void *addr;
     size_t size;
     bool is_allocated;
-    mzone_no_chunk_t *next;
+    struct mzone_no_chunk_s *next;
 } mzone_no_chunk_t;
 
 typedef struct mmanager_s {
@@ -45,5 +47,8 @@ typedef struct mmanager_s {
     mzone_t* small_malloc_zones;
     mzone_no_chunk_t* large_malloc_zones;
 } mmanager_t;
+
+
+bool initialize_mmanager(mmanager_t* mmanager);
 
 #endif
