@@ -1,15 +1,13 @@
 CC		= cc
-CFLAGS	= -Wall -Wextra -Werror -g3
-
-INCLUDE	= -I includes -I libft/headers
-
-LIB		= -L libft -lft
+CFLAGS	= -Wall -Wextra -Werror -g3 -c -fPIC
 
 SRCS	= $(wildcard src/*.c)
 		
 OBJS	= $(patsubst src/%.c, $(BIN_DIR)/%.o, $(SRCS))
 
 BIN_DIR = bin
+
+BIN_TEST = malloc_test
 
 ifeq ($(HOSTTYPE),)
 HOSTTYPE := $(shell uname -m)_$(shell uname -s)
@@ -23,21 +21,23 @@ $(BIN_DIR):
 	@mkdir -p bin
 
 $(BIN_DIR)/%.o: src/%.c
-	$(CC) $(CFLAGS) -c $(INCLUDE) -o $@ $<
+	$(CC) $(CFLAGS) $(INCLUDE) -o $@ $<
 
 $(NAME): ${BIN_DIR} $(OBJS)
-	make -C libft
-	$(CC) $(CFLAGS) $(OBJS) -o $(NAME) $(INCLUDE) $(LIB)
+	$(CC) -shared $(OBJS) -o $(NAME) $(INCLUDE) $(LIB)
 	
 clean:
-	make -C libft clean
 	rm -rf $(BIN_DIR)
 
 fclean: clean
-	make -C libft fclean
 	rm -rf $(BIN_DIR)
+	rm -f $(NAME)
+	rm -rf $(BIN_TEST)
 
 re: fclean
 	make all
+
+test_main: $(NAME)
+	$(CC) -Wall -Wextra -Werror -g3 -o $(BIN_TEST) test_main.c -L./ -lft_malloc_$(HOSTTYPE)
 
 .PHONY: all clean fclean re
