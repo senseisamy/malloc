@@ -21,15 +21,18 @@ $(BIN_DIR):
 	@mkdir -p bin
 
 $(BIN_DIR)/%.o: src/%.c
-	$(CC) $(CFLAGS) $(INCLUDE) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $<
 
 $(NAME): ${BIN_DIR} $(OBJS)
-	$(CC) -shared $(OBJS) -o $(NAME) $(INCLUDE) $(LIB)
+	make -C printf
+	$(CC) -shared $(OBJS) -o $(NAME) -L./printf -lftprintf
 	
 clean:
+	make -C printf clean
 	rm -rf $(BIN_DIR)
 
 fclean: clean
+	make -C printf fclean
 	rm -rf $(BIN_DIR)
 	rm -f $(NAME)
 	rm -rf $(BIN_TEST)
