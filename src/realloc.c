@@ -1,29 +1,35 @@
 #include "libft_malloc_internal.h"
 
 void* realloc(void* ptr, size_t size) {
+    lock_mutex();
     if (!mmanager.is_initialized)
-        return NULL;
+        return unlock_mutex_and_return(NULL);
 
     mchunk_t* chunk = find_chunk(ptr);
     if (chunk) {
+        unlock_mutex();
         char* new_ptr = malloc(size);
         if (!new_ptr)
             return NULL;
+        lock_mutex();
         for (size_t i = 0; i < chunk->size; ++i)
             new_ptr[i] = ((char*)chunk->addr)[i];
         chunk->in_use = false;
         chunk->size = 0;
-        return (void*)new_ptr;
+        return unlock_mutex_and_return((void*)new_ptr);
     }
     mzone_no_chunk_t* large_zone = find_large_zone(ptr);
     if (large_zone) {
+        unlock_mutex();
         char* new_ptr = malloc(size);
         if (!new_ptr)
             return NULL;
+        lock_mutex();
         for (size_t i = 0; i < large_zone->size; ++i)
             new_ptr[i] = ((char*)large_zone->addr)[i];
+        unlock_mutex();
         free(ptr);
         return (void*)new_ptr;
     }
-    return NULL;
+    return unlock_mutex_and_return(NULL);
 }

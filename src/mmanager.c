@@ -1,5 +1,4 @@
 #include "libft_malloc_internal.h"
-#include "../printf/headers/ft_printf.h"
 
 // rounds up a to a multiple of b (allows to align memory to 16 for exemple)
 size_t round_up_to(size_t a, size_t b) {
@@ -175,4 +174,17 @@ mzone_no_chunk_t* find_large_zone(void* ptr) {
         large_zone = large_zone->next;
     }
     return NULL;
+}
+
+inline void lock_mutex() {
+    pthread_mutex_lock(&mutex_malloc);
+}
+
+inline void unlock_mutex() {
+    pthread_mutex_unlock(&mutex_malloc);
+}
+
+inline void* unlock_mutex_and_return(void* ptr) {
+    pthread_mutex_unlock(&mutex_malloc);
+    return ptr;
 }

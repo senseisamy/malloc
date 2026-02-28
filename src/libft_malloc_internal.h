@@ -5,6 +5,8 @@
 # include <unistd.h>
 # include <stdbool.h>
 # include <sys/mman.h>
+# include <pthread.h>
+# include "../printf/headers/ft_printf.h"
 
 # if defined(__linux__)
 #  define PAGE_SIZE sysconf(_SC_PAGESIZE)
@@ -47,6 +49,7 @@ typedef struct mmanager_s {
 } mmanager_t;
 
 mmanager_t mmanager; // global memory manager
+pthread_mutex_t mutex_malloc; // global mutex for thread safety
 
 bool initialize_mmanager();
 size_t round_up_to(size_t a, size_t b);
@@ -55,5 +58,9 @@ mzone_no_chunk_t* find_large_zone(void* ptr);
 void* malloc(size_t size);
 void* realloc(void* ptr, size_t size);
 void free(void* ptr);
+
+void lock_mutex();
+void unlock_mutex();
+void* unlock_mutex_and_return(void* ptr);
 
 #endif

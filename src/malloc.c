@@ -56,12 +56,14 @@ mzone_no_chunk_t* malloc_and_get_zone(mzone_no_chunk_t** start_zone, size_t size
 
 
 void* malloc(size_t size) {
+    lock_mutex();
+    ft_printf("USING MY MALLOC OMG\n");
     if (!mmanager.is_initialized)
         if (!initialize_mmanager())
-            return NULL;
+            return unlock_mutex_and_return(NULL);
 
     if (size == 0)
-        return NULL;
+        return unlock_mutex_and_return(NULL);
     if (size <= (size_t)SMALL_MALLOC_SIZE) { // tiny or small malloc
         mchunk_t* chunk = NULL;
         if (size <= (size_t)TINY_MALLOC_SIZE)
@@ -70,16 +72,16 @@ void* malloc(size_t size) {
             chunk = get_first_available_chunk(mmanager.small_malloc_zones);
 
         if (!chunk)
-            return NULL;
+            return unlock_mutex_and_return(NULL);
 
         chunk->in_use = true;
         chunk->size = size;
-        return chunk->addr;
+        return unlock_mutex_and_return(chunk->addr);
     }
     else { // large malloc
         mzone_no_chunk_t* zone = malloc_and_get_zone(&mmanager.large_malloc_zones, size);
         if (!zone)
-            return NULL;
-        return (zone->addr);
+            return unlock_mutex_and_return(NULL);
+        return unlock_mutex_and_return(zone->addr);
     }
 }

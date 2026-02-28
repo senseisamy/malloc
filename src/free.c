@@ -1,13 +1,17 @@
 #include "libft_malloc_internal.h"
 
 void free(void *ptr) {
-    if (!mmanager.is_initialized)
+    lock_mutex();
+    if (!mmanager.is_initialized) {
+        unlock_mutex();
         return;
+    }
 
     mchunk_t* chunk = find_chunk(ptr);
     if (chunk) {
         chunk->in_use = false;
         chunk->size = 0;
+        unlock_mutex();
         return;
     }
 
@@ -21,12 +25,15 @@ void free(void *ptr) {
             while (prev_zone->next && prev_zone->next != large_zone) {
                 prev_zone = prev_zone->next;
             }
-            if (prev_zone == NULL)
+            if (prev_zone == NULL) {
+                unlock_mutex();
                 return;
+            }
             prev_zone->next = large_zone->next; // removes the zone from the chained list
         }
 
         size_t aligned_struct_size = round_up_to(sizeof(mzone_no_chunk_t), 16);
         munmap(large_zone, round_up_to(aligned_struct_size + large_zone->size, PAGE_SIZE));
     }
+    unlock_mutex();
 }
