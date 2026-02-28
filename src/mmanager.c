@@ -1,5 +1,8 @@
 #include "libft_malloc_internal.h"
 
+mmanager_t mmanager;
+pthread_mutex_t mutex_malloc = PTHREAD_MUTEX_INITIALIZER;
+
 // rounds up a to a multiple of b (allows to align memory to 16 for exemple)
 size_t round_up_to(size_t a, size_t b) {
     return b * ((a + b - 1) / b);
@@ -186,5 +189,7 @@ inline void unlock_mutex() {
 
 inline void* unlock_mutex_and_return(void* ptr) {
     pthread_mutex_unlock(&mutex_malloc);
+    if (!ptr)
+        ft_printf("returning NULL\n");
     return ptr;
 }

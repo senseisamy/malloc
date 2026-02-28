@@ -2,27 +2,31 @@
 #include "printf/headers/ft_printf.h"
 
 int main (void) {
-    char* tiny = malloc(500);
-    tiny[0] = 'c';
-    tiny[400] = 'a';
+    // char* tiny;
+    // for (int i = 0; i < 350; ++i) {
+    //     tiny = malloc(500);
+    //     if (!tiny)
+    //         ft_printf("tiny malloc failed\n");
+    // }
 
-    char* small = malloc(3000);
-    small[0] = 'a';
-    small[2067] = 'b';
+    // char* small;
+    // for (int i = 0; i < 350; ++i) {
+    //     small = malloc(4000);
+    //     if (!small)
+    //         ft_printf("small malloc failed\n");
+    // }
 
-    char* large = malloc(1000000);
-    large[100000] = 'a';
-    char* large2 = malloc(363667);
-    large2[67] = 'b';
-    large2 = realloc(large2, 676767);
-    ft_printf("large2[67]=%c\n", large2[67]);
+    // char* large;
+    // for (int i = 0; i < 350; ++i) {
+    //     large = malloc(10000);
+    //     if (!large)
+    //         ft_printf("large malloc failed\n");
+    // }
 
-    show_malloc_mem();
+    void* ptr;
+    for (size_t i = 0; i < 1000000; ++i) {
+        ptr = malloc(50);
+    }
 
-    ft_printf("\nfreeing memory\n\n");
-    free(tiny);
-    free(small);
-    free(large);
-
-    show_malloc_mem();
+    //show_malloc_mem();
 }

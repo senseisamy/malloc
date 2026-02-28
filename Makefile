@@ -43,12 +43,13 @@ fclean: clean
 	rm -rf $(BIN_DIR)
 	rm -f $(NAME)
 	rm -rf $(BIN_TEST)
-	rm libft_malloc.so
+	rm -f libft_malloc.so
 
 re: fclean
 	make all
 
 $(BIN_TEST): $(NAME_S)
 	$(CC) -Wall -Wextra -Werror -g3 -o $(BIN_TEST) test_main.c -L./ -lft_malloc
+	LD_LIBRARY_PATH=. ./$(BIN_TEST)
 
 .PHONY: all clean fclean re printf

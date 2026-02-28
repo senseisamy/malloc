@@ -18,8 +18,8 @@
 
 # define TINY_MALLOC_SIZE 512 // we have to make sure this value is a mutliple of 16 for the memory to stay aligned
 # define SMALL_MALLOC_SIZE 4096 // same here
-# define TINY_MALLOC_ZONE_PREALLOCATED 1
-# define SMALL_MALLOC_ZONE_PREALLOCATED 1
+# define TINY_MALLOC_ZONE_PREALLOCATED 5 // number of tiny zones preallocated at the start
+# define SMALL_MALLOC_ZONE_PREALLOCATED 5 // number of small zones preallocated at the start
 # define MALLOC_PER_ZONE 100
 
 typedef struct mchunk_s {
@@ -48,10 +48,11 @@ typedef struct mmanager_s {
     mzone_no_chunk_t* large_malloc_zones;
 } mmanager_t;
 
-mmanager_t mmanager; // global memory manager
-pthread_mutex_t mutex_malloc; // global mutex for thread safety
+extern mmanager_t mmanager; // global memory manager
+extern pthread_mutex_t mutex_malloc; // global mutex for thread safety
 
 bool initialize_mmanager();
+void show_malloc_mem();
 size_t round_up_to(size_t a, size_t b);
 mchunk_t* find_chunk(void* ptr);
 mzone_no_chunk_t* find_large_zone(void* ptr);
