@@ -23,9 +23,11 @@ int main (void) {
     //         ft_printf("large malloc failed\n");
     // }
 
-    void* ptr;
+    char* ptr = NULL;
     for (size_t i = 0; i < 1000000; ++i) {
         ptr = malloc(50);
+        ptr[0] = '1';
+        ptr[49] = '2';
     }
 
     //show_malloc_mem();

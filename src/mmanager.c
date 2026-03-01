@@ -8,36 +8,38 @@ size_t round_up_to(size_t a, size_t b) {
     return b * ((a + b - 1) / b);
 }
 
+mzone_t* malloc_new_zone(size_t chunk_size) {
+    size_t aligned_struct_size = round_up_to(sizeof(mzone_t), 16);
+    size_t zone_size = round_up_to(aligned_struct_size + chunk_size * MALLOC_PER_ZONE, PAGE_SIZE);
+    mzone_t* mzone = mmap(
+        NULL,
+        zone_size,
+        PROT_READ | PROT_WRITE,
+        MAP_PRIVATE | MAP_ANONYMOUS,
+        -1,
+        0
+    );
+    if (!mzone) 
+        return NULL;
+
+    mzone->addr = (void*)((char*)mzone + aligned_struct_size);
+    mzone->is_full = false;
+    void* start_zone_addr = mzone->addr;
+    for (int j = 0; j < MALLOC_PER_ZONE; ++j) {
+        mzone->chunks[j].addr = start_zone_addr;
+        start_zone_addr += chunk_size;
+    }
+    return mzone;
+}
+
 bool initialize_mmanager() {
     // tiny malloc zones
     int i = 0;
     mzone_t** zone_ptr = &mmanager.tiny_malloc_zones;
-    size_t malloc_size = TINY_MALLOC_SIZE;
-    size_t aligned_struct_size = round_up_to(sizeof(mzone_t), 16);
-    size_t zone_size = round_up_to(aligned_struct_size + malloc_size * MALLOC_PER_ZONE, PAGE_SIZE);
     while (i < TINY_MALLOC_ZONE_PREALLOCATED) {
-
-        // memory zone allocation
-        mzone_t* mzone = mmap(
-            NULL,
-            zone_size,
-            PROT_READ | PROT_WRITE,
-            MAP_PRIVATE | MAP_ANONYMOUS,
-            -1,
-            0
-        );
-
+        mzone_t* mzone = malloc_new_zone(TINY_MALLOC_SIZE);
         if (!mzone)
             return false;
-
-        mzone->addr = (void*)((char*)mzone + aligned_struct_size);
-        mzone->is_full = false;
-        void* start_zone_addr = mzone->addr;
-        for (int j = 0; j < MALLOC_PER_ZONE; ++j) {
-            mzone->chunks[j].addr = start_zone_addr;
-            start_zone_addr += malloc_size;
-        }
-
         *zone_ptr = mzone;
         zone_ptr = &mzone->next;
         ++i;
@@ -46,30 +48,10 @@ bool initialize_mmanager() {
     // small malloc zones
     i = 0;
     zone_ptr = &mmanager.small_malloc_zones;
-    malloc_size = SMALL_MALLOC_SIZE;
-    zone_size = round_up_to(aligned_struct_size + malloc_size * MALLOC_PER_ZONE, PAGE_SIZE);
     while (i < SMALL_MALLOC_ZONE_PREALLOCATED) {
-        // memory zone allocation
-        mzone_t* mzone = mmap(
-            NULL,
-            zone_size,
-            PROT_READ | PROT_WRITE,
-            MAP_PRIVATE | MAP_ANONYMOUS,
-            -1,
-            0
-        );
-
+        mzone_t* mzone = malloc_new_zone(SMALL_MALLOC_SIZE);
         if (!mzone)
             return false;
-
-        mzone->addr = (void*)((char*)mzone + aligned_struct_size);
-        mzone->is_full = false;
-        void* start_zone_addr = mzone->addr;
-        for (int j = 0; j < MALLOC_PER_ZONE; ++j) {
-            mzone->chunks[j].addr = start_zone_addr;
-            start_zone_addr += malloc_size;
-        }
-
         *zone_ptr = mzone;
         zone_ptr = &mzone->next;
         ++i;

@@ -1,20 +1,19 @@
 #include "libft_malloc_internal.h"
 
-mchunk_t* get_first_available_chunk(mzone_t* zone) {
-    mzone_t* zone2 = zone;
-    while (zone2) {
-        if (!zone2->is_full) {
+mchunk_t* get_first_available_chunk(mzone_t* zone, size_t chunk_size) {
+    while (zone) {
+        if (!zone->is_full) {
             for (int i = 0; i < MALLOC_PER_ZONE; ++i) {
-                mchunk_t* chunk = &zone2->chunks[i];
+                mchunk_t* chunk = &zone->chunks[i];
                 if (!chunk->in_use)
                     return chunk;
             }
-            zone2->is_full = true;
+            zone->is_full = true;
         }
-        zone2 = zone2->next;
+        if (zone->next == NULL)
+            zone->next = malloc_new_zone(chunk_size);
+        zone = zone->next;
     }
-    // here we could allocate a new zone if all are full
-    
     return NULL;
 }
 
@@ -69,9 +68,9 @@ void* malloc(size_t size) {
     if (size <= (size_t)SMALL_MALLOC_SIZE) { // tiny or small malloc
         mchunk_t* chunk = NULL;
         if (size <= (size_t)TINY_MALLOC_SIZE)
-            chunk = get_first_available_chunk(mmanager.tiny_malloc_zones);
+            chunk = get_first_available_chunk(mmanager.tiny_malloc_zones, TINY_MALLOC_SIZE);
         else
-            chunk = get_first_available_chunk(mmanager.small_malloc_zones);
+            chunk = get_first_available_chunk(mmanager.small_malloc_zones, SMALL_MALLOC_SIZE);
 
         if (!chunk)
             return unlock_mutex_and_return(NULL);

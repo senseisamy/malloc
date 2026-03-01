@@ -54,6 +54,7 @@ extern pthread_mutex_t mutex_malloc; // global mutex for thread safety
 bool initialize_mmanager();
 void show_malloc_mem();
 size_t round_up_to(size_t a, size_t b);
+mzone_t* malloc_new_zone(size_t chunk_size);
 mchunk_t* find_chunk(void* ptr);
 mzone_no_chunk_t* find_large_zone(void* ptr);
 void* malloc(size_t size);
