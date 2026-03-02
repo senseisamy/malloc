@@ -171,7 +171,7 @@ inline void unlock_mutex() {
 
 inline void* unlock_mutex_and_return(void* ptr) {
     pthread_mutex_unlock(&mutex_malloc);
-    if (!ptr)
-        ft_printf("returning NULL\n");
+    // if (!ptr)
+    //     ft_printf("returning NULL\n");
     return ptr;
 }

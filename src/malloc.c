@@ -58,7 +58,7 @@ mzone_no_chunk_t* malloc_and_get_zone(mzone_no_chunk_t** start_zone, size_t size
 
 void* malloc(size_t size) {
     lock_mutex();
-    ft_printf("call to malloc with size: %u\n", size);
+    //ft_printf("call to malloc with size: %u\n", size);
     if (!mmanager.is_initialized)
         if (!initialize_mmanager())
             return unlock_mutex_and_return(NULL);

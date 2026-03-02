@@ -5,7 +5,7 @@ void* realloc(void* ptr, size_t size) {
         return malloc(size);
 
     lock_mutex();
-    ft_printf("call to realloc with ptr: %p size: %u\n", ptr, size);
+    //ft_printf("call to realloc with ptr: %p size: %u\n", ptr, size);
     if (!mmanager.is_initialized)
         return unlock_mutex_and_return(NULL);
 
