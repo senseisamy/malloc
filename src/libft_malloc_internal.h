@@ -22,6 +22,11 @@
 # define SMALL_MALLOC_ZONE_PREALLOCATED 5 // number of small zones preallocated at the start
 # define MALLOC_PER_ZONE 100
 
+# define RED "\e[0;31m"
+# define GREEN "\e[0;32m"
+# define ITALIC "\e[3m"
+# define RESET "\e[0m"
+
 typedef struct mchunk_s {
     void* addr;
     size_t size;
@@ -41,8 +46,13 @@ typedef struct mzone_no_chunk_s {
     struct mzone_no_chunk_s *next;
 } mzone_no_chunk_t;
 
+typedef struct debug_malloc_s {
+    bool enable_logs;
+} debug_malloc_t;
+
 typedef struct mmanager_s {
     bool is_initialized;
+    debug_malloc_t debug_properties;
     mzone_t* tiny_malloc_zones;
     mzone_t* small_malloc_zones;
     mzone_no_chunk_t* large_malloc_zones;
@@ -57,8 +67,10 @@ size_t round_up_to(size_t a, size_t b);
 mzone_t* malloc_new_zone(size_t chunk_size);
 mchunk_t* find_chunk(void* ptr);
 mzone_no_chunk_t* find_large_zone(void* ptr);
+void* malloc_internal(size_t size);
 void* malloc(size_t size);
 void* realloc(void* ptr, size_t size);
+bool free_internal(void *ptr);
 void free(void* ptr);
 
 void lock_mutex();

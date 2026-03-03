@@ -2,6 +2,27 @@
 
 mmanager_t mmanager;
 pthread_mutex_t mutex_malloc = PTHREAD_MUTEX_INITIALIZER;
+extern char** environ; // global array of environment strings
+
+static bool starts_with(const char* str, const char* prefix) {
+    while (*prefix)
+        if (*prefix++ != *str++)
+            return false;
+    return true;
+}
+
+static void init_debug_properties(debug_malloc_t* debug_properties) {
+    if (!debug_properties)
+        return;
+    *debug_properties = (debug_malloc_t){0}; // sets every field to false
+
+    if (!environ)
+        return;
+    for (int i = 0; environ[i]; ++i) {
+        if (starts_with(environ[i], "FT_MALLOC_LOGS=1"))
+            debug_properties->enable_logs = true;
+    }
+}
 
 // rounds up a to a multiple of b (allows to align memory to 16 for exemple)
 size_t round_up_to(size_t a, size_t b) {
@@ -33,6 +54,8 @@ mzone_t* malloc_new_zone(size_t chunk_size) {
 }
 
 bool initialize_mmanager() {
+    init_debug_properties(&mmanager.debug_properties);
+
     // tiny malloc zones
     int i = 0;
     mzone_t** zone_ptr = &mmanager.tiny_malloc_zones;
