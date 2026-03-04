@@ -7,9 +7,6 @@ void* calloc(size_t count, size_t size) {
     if (!mmanager.is_initialized)
         if (!initialize_mmanager())
             goto ret;
-
-    if (mmanager.debug_properties.enable_logs)
-        ft_printf("call to %scalloc(%u, %u)%s, ", ITALIC, count, size, RESET);
     
     size_t total_size;
     if (__builtin_mul_overflow(count, size, &total_size))
@@ -20,11 +17,17 @@ void* calloc(size_t count, size_t size) {
         ((char*)ret)[i] = 0;
 
     ret:
-        if (mmanager.debug_properties.enable_logs) {
-            if (!mmanager.is_initialized)
-                ft_printf("%sFailed to initialize mmanager%s\n", RED, RESET);
-            else
-                ft_printf("returning %s%p%s\n", (ret ? GREEN : RED), ret, RESET);
+        switch (mmanager.debug.log_level) {
+            case DEBUG:
+                if (ret)
+                    ft_printf("call to %scalloc(%u, %u)%s, returning %s%p%s\n", ITALIC, count, size, RESET, GREEN, ret, RESET);
+            case WARNING:
+                if (!ret)
+                    ft_printf("call to %scalloc(%u, %u)%s, returning %s%p%s\n", ITALIC, count, size, RESET, RED, ret, RESET);
+            case ERROR:
+                if (!mmanager.is_initialized)
+                    ft_printf("%sFailed to initialize mmanager%s\n", RED, RESET);
+            case NONE:
         }
         unlock_mutex();
         return ret;

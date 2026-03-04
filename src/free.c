@@ -1,6 +1,8 @@
 #include "libft_malloc_internal.h"
 
 bool free_internal(void *ptr) {
+    if (!mmanager.is_initialized)
+        return false;
     if (!ptr)
         return true;
 
@@ -8,6 +10,8 @@ bool free_internal(void *ptr) {
     if (chunk) {
         chunk->in_use = false;
         chunk->size = 0;
+        if (mmanager.debug.count_alloc)
+            ++mmanager.debug.n_free;
         return true;
     }
 
@@ -29,6 +33,8 @@ bool free_internal(void *ptr) {
 
         size_t aligned_struct_size = round_up_to(sizeof(mzone_no_chunk_t), 16);
         munmap(large_zone, round_up_to(aligned_struct_size + large_zone->size, PAGE_SIZE));
+        if (mmanager.debug.count_alloc)
+            ++mmanager.debug.n_free;
         return true;
     }
 
@@ -38,21 +44,23 @@ bool free_internal(void *ptr) {
 void free(void* ptr) {
     lock_mutex();
 
-    bool ret = false;
     if (!mmanager.is_initialized)
-        if (!initialize_mmanager())
-            goto ret;
+        initialize_mmanager();
 
-    if (mmanager.debug_properties.enable_logs)
-        ft_printf("call to %sfree(%p)%s, ", ITALIC, ptr, RESET);
-    ret = free_internal(ptr);
+    bool ret = free_internal(ptr);
 
-    ret:
-        if (mmanager.debug_properties.enable_logs) {
+    switch (mmanager.debug.log_level) {
+        case DEBUG:
+            if (ret)
+                ft_printf("call to %sfree(%p)%s, %ssuccess%s\n", ITALIC, ptr, RESET, GREEN, RESET);
+        case WARNING:
+            if (!ret)
+                ft_printf("call to %sfree(%p)%s, %sfailed%s\n", ITALIC, ptr, RESET, RED, RESET);
+        case ERROR:
             if (!mmanager.is_initialized)
                 ft_printf("%sFailed to initialize mmanager%s\n", RED, RESET);
-            else
-                ft_printf("%s%s\n", (ret ? GREEN"succes" : RED"failed"), RESET);
-        }
-        unlock_mutex();
+        case NONE:
+    }
+
+    unlock_mutex();
 }

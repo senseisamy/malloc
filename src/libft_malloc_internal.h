@@ -4,6 +4,7 @@
 # include <stddef.h>
 # include <unistd.h>
 # include <stdbool.h>
+# include <fcntl.h>
 # include <sys/mman.h>
 # include <pthread.h>
 # include "../printf/headers/ft_printf.h"
@@ -18,14 +19,18 @@
 
 # define TINY_MALLOC_SIZE 512 // we have to make sure this value is a mutliple of 16 for the memory to stay aligned
 # define SMALL_MALLOC_SIZE 4096 // same here
-# define TINY_MALLOC_ZONE_PREALLOCATED 5 // number of tiny zones preallocated at the start
-# define SMALL_MALLOC_ZONE_PREALLOCATED 5 // number of small zones preallocated at the start
+# define TINY_MALLOC_ZONE_PREALLOCATED 2 // number of tiny zones preallocated at the start
+# define SMALL_MALLOC_ZONE_PREALLOCATED 2 // number of small zones preallocated at the start
 # define MALLOC_PER_ZONE 100
 
 # define RED "\e[0;31m"
 # define GREEN "\e[0;32m"
+# define UNDERLINE "\e[4m"
 # define ITALIC "\e[3m"
+# define BOLD "\e[1m"
 # define RESET "\e[0m"
+
+# define MAX(A, B) ((A) > (B) ? (A) : (B))
 
 typedef struct mchunk_s {
     void* addr;
@@ -36,6 +41,7 @@ typedef struct mchunk_s {
 typedef struct mzone_s {
     mchunk_t chunks[MALLOC_PER_ZONE];
     void *addr; // address of where the free and aligned memory starts
+    size_t size;
     bool is_full;
     struct mzone_s *next;
 } mzone_t;
@@ -46,13 +52,24 @@ typedef struct mzone_no_chunk_s {
     struct mzone_no_chunk_s *next;
 } mzone_no_chunk_t;
 
+typedef enum log_level_s {
+    NONE = 0,
+    ERROR,
+    WARNING,
+    DEBUG,
+} log_level_t;
+
 typedef struct debug_malloc_s {
-    bool enable_logs;
+    log_level_t log_level;
+    bool dump_mem_on_exit;
+    bool count_alloc;
+    size_t n_alloc; // total number of allocation
+    size_t n_free; // total number of free
 } debug_malloc_t;
 
 typedef struct mmanager_s {
     bool is_initialized;
-    debug_malloc_t debug_properties;
+    debug_malloc_t debug;
     mzone_t* tiny_malloc_zones;
     mzone_t* small_malloc_zones;
     mzone_no_chunk_t* large_malloc_zones;

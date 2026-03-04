@@ -7,5 +7,6 @@ void* realloc(void* ptr, size_t size);
 void* calloc(size_t count, size_t size);
 void free(void* ptr);
 void show_malloc_mem();
+size_t malloc_usable_size(void *ptr);
 
 #endif

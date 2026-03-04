@@ -1,9 +1,11 @@
 CC		= cc
-CFLAGS	= -Wall -Wextra -Werror -g3 -c -fPIC -pthread
+CFLAGS	= -Wall -Wextra -Werror -Wimplicit-fallthrough=0 -g3 -c -fPIC -pthread
 
 SRCS	= $(wildcard src/*.c)
 		
 OBJS	= $(patsubst src/%.c, $(BIN_DIR)/%.o, $(SRCS))
+
+INCLUDES = src/libft_malloc_internal.h
 
 BIN_DIR = bin
 
@@ -22,7 +24,7 @@ all: $(NAME_S)
 $(BIN_DIR):
 	@mkdir -p bin
 
-$(BIN_DIR)/%.o: src/%.c
+$(BIN_DIR)/%.o: src/%.c $(INCLUDES)
 	$(CC) $(CFLAGS) -o $@ $<
 
 $(NAME): printf ${BIN_DIR} $(OBJS)

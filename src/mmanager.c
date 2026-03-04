@@ -2,7 +2,7 @@
 
 mmanager_t mmanager;
 pthread_mutex_t mutex_malloc = PTHREAD_MUTEX_INITIALIZER;
-extern char** environ; // global array of environment strings
+extern char** environ; // global array of environment variables
 
 static bool starts_with(const char* str, const char* prefix) {
     while (*prefix)
@@ -11,16 +11,24 @@ static bool starts_with(const char* str, const char* prefix) {
     return true;
 }
 
-static void init_debug_properties(debug_malloc_t* debug_properties) {
-    if (!debug_properties)
+static void init_debug_properties(debug_malloc_t* debug) {
+    if (!debug)
         return;
-    *debug_properties = (debug_malloc_t){0}; // sets every field to false
+    *debug = (debug_malloc_t){0}; // sets every field to false
 
     if (!environ)
         return;
     for (int i = 0; environ[i]; ++i) {
-        if (starts_with(environ[i], "FT_MALLOC_LOGS=1"))
-            debug_properties->enable_logs = true;
+        if (starts_with(environ[i], "FT_MALLOC_LOGS=DEBUG"))
+            debug->log_level = MAX(debug->log_level, DEBUG);
+        else if (starts_with(environ[i], "FT_MALLOC_LOGS=WARNING"))
+            debug->log_level = MAX(debug->log_level, WARNING);
+        else if (starts_with(environ[i], "FT_MALLOC_LOGS=ERROR"))
+            debug->log_level = MAX(debug->log_level, ERROR);
+        else if (starts_with(environ[i], "FT_MALLOC_DUMP_MEM_ON_EXIT=1"))
+            debug->dump_mem_on_exit = true;
+        else if (starts_with(environ[i], "FT_MALLOC_COUNT=1"))
+            debug->count_alloc = true;
     }
 }
 
@@ -44,6 +52,7 @@ mzone_t* malloc_new_zone(size_t chunk_size) {
         return NULL;
 
     mzone->addr = (void*)((char*)mzone + aligned_struct_size);
+    mzone->size = zone_size;
     mzone->is_full = false;
     void* start_zone_addr = mzone->addr;
     for (int j = 0; j < MALLOC_PER_ZONE; ++j) {
@@ -54,7 +63,7 @@ mzone_t* malloc_new_zone(size_t chunk_size) {
 }
 
 bool initialize_mmanager() {
-    init_debug_properties(&mmanager.debug_properties);
+    init_debug_properties(&mmanager.debug);
 
     // tiny malloc zones
     int i = 0;
@@ -87,7 +96,16 @@ bool initialize_mmanager() {
     return true;
 }
 
+bool is_empty(mzone_t* zone) {
+    for (int i = 0; i < MALLOC_PER_ZONE; ++i)
+        if (zone->chunks[i].in_use)
+            return false;
+    return true;
+}
+
 void show_malloc_mem() {
+    lock_mutex();
+
     if (!mmanager.is_initialized) {
         ft_printf("show_malloc_mem: mmanager is not initialized\n");
         return;
@@ -95,44 +113,77 @@ void show_malloc_mem() {
 
     size_t total_memory_in_use = 0;
 
+    int zone_count = 1;
     mzone_t* tiny = mmanager.tiny_malloc_zones;
     while (tiny) {
-        ft_printf("TINY: %p\n", (void*)tiny);
-        for (int i = 0; i < MALLOC_PER_ZONE; ++i) {
-            mchunk_t* chunk = &tiny->chunks[i];
-            if (chunk->in_use) {
-                void* start = chunk->addr;
-                void* end = (void*)((char*)start + chunk->size);
-                ft_printf("%p - %p : %u bytes\n", start, end, chunk->size);
-                total_memory_in_use += chunk->size;
+        if (!is_empty(tiny)) {
+            ft_printf("%sTINY ZONE %d:%s %p->%p%s\n", BOLD, zone_count, RESET ITALIC, (void*)tiny, (char*)tiny + tiny->size, RESET);
+            for (int i = 0; i < MALLOC_PER_ZONE; ++i) {
+                mchunk_t* chunk = &tiny->chunks[i];
+                if (chunk->in_use) {
+                    void* start = chunk->addr;
+                    void* end = (void*)((char*)start + chunk->size);
+                    ft_printf(" chunk %d:\t%s%p->%p%s (%u bytes)\n", i + 1, ITALIC, start, end, RESET, chunk->size);
+                    total_memory_in_use += chunk->size;
+                }
             }
         }
+        ++zone_count;
         tiny = tiny->next;
     }
+    zone_count = 1;
     mzone_t* small = mmanager.small_malloc_zones;
     while (small) {
-        ft_printf("SMALL: %p\n", (void*)small);
-        for (int i = 0; i < MALLOC_PER_ZONE; ++i) {
-            mchunk_t* chunk = &small->chunks[i];
-            if (chunk->in_use) {
-                void* start = chunk->addr;
-                void* end = (void*)((char*)start + chunk->size);
-                ft_printf("%p - %p : %u bytes\n", start, end, chunk->size);
-                total_memory_in_use += chunk->size;
+        if (!is_empty(small)) {
+            ft_printf("%sSMALL ZONE %d:%s %p - %p%s\n", BOLD, zone_count, RESET ITALIC, (void*)small, (char*)small + small->size, RESET);
+            for (int i = 0; i < MALLOC_PER_ZONE; ++i) {
+                mchunk_t* chunk = &small->chunks[i];
+                if (chunk->in_use) {
+                    void* start = chunk->addr;
+                    void* end = (void*)((char*)start + chunk->size);
+                    ft_printf(" chunk %d:\t%s%p->%p%s (%u bytes)\n", i + 1, ITALIC, start, end, RESET, chunk->size);
+                    total_memory_in_use += chunk->size;
+                }
             }
         }
+        ++zone_count;
         small = small->next;
     }
+    zone_count = 1;
     mzone_no_chunk_t* large = mmanager.large_malloc_zones;
     while (large) {
-        ft_printf("LARGE: %p\n", (void*)large);
         void* start = large->addr;
         void* end = (void*)((char*)start + large->size);
-        ft_printf("%p - %p : %u bytes\n", start, end, large->size);
+        ft_printf("%sLARGE ZONE %d:\t%s%p->%p%s (%u bytes)\n", BOLD, zone_count, RESET ITALIC, start, end, RESET, large->size);
         total_memory_in_use += large->size;
+        ++zone_count;
         large = large->next;
     }
-    ft_printf("TOTAL : %u bytes\n", total_memory_in_use);
+    ft_printf("%sTOTAL:%s %u bytes allocated\n", UNDERLINE BOLD, RESET, total_memory_in_use);
+    if (mmanager.debug.count_alloc)
+        ft_printf("%u allocations, %d free\n", mmanager.debug.n_alloc, mmanager.debug.n_free);
+
+    unlock_mutex();
+}
+
+// function that gets called when the program exits
+__attribute__((destructor))
+static void dump_memory_on_exit() {
+    if (!mmanager.debug.dump_mem_on_exit)
+        return;
+
+    lock_mutex();
+    int tty_fd = open("/dev/tty", O_WRONLY);
+    if (!tty_fd)
+        return;
+
+    if (tty_fd != 1)
+        dup2(tty_fd, 1);
+
+    ft_printf("\n--- MALLOC MEMORY DUMP ---\n");
+    unlock_mutex();
+    show_malloc_mem();
+    close(1);
 }
 
 static bool is_in_zone(void* ptr, mzone_t* zone) {
@@ -194,7 +245,5 @@ inline void unlock_mutex() {
 
 inline void* unlock_mutex_and_return(void* ptr) {
     pthread_mutex_unlock(&mutex_malloc);
-    // if (!ptr)
-    //     ft_printf("returning NULL\n");
     return ptr;
 }

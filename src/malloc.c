@@ -56,7 +56,7 @@ mzone_no_chunk_t* malloc_and_get_zone(mzone_no_chunk_t** start_zone, size_t size
 }
 
 void* malloc_internal(size_t size) {
-    if (size == 0)
+    if (size == 0 || !mmanager.is_initialized)
         return NULL;
     if (size <= (size_t)SMALL_MALLOC_SIZE) { // tiny or small malloc
         mchunk_t* chunk = NULL;
@@ -70,12 +70,16 @@ void* malloc_internal(size_t size) {
 
         chunk->in_use = true;
         chunk->size = size;
+        if (mmanager.debug.count_alloc)
+            ++mmanager.debug.n_alloc;
         return chunk->addr;
     }
     else { // large malloc
         mzone_no_chunk_t* zone = malloc_and_get_zone(&mmanager.large_malloc_zones, size);
         if (!zone)
             return NULL;
+        if (mmanager.debug.count_alloc)
+            ++mmanager.debug.n_alloc;
         return zone->addr;
     }
 }
@@ -83,23 +87,24 @@ void* malloc_internal(size_t size) {
 void* malloc(size_t size) {
     lock_mutex();
 
-    void* ret = NULL;
     if (!mmanager.is_initialized)
-        if (!initialize_mmanager())
-            goto ret;
-
-    if (mmanager.debug_properties.enable_logs)
-        ft_printf("call to %smalloc(%u)%s, ", ITALIC, size, RESET);
+        initialize_mmanager();
     
-    ret = malloc_internal(size);
+    void* ret = malloc_internal(size);
 
-    ret:
-        if (mmanager.debug_properties.enable_logs) {
+    switch (mmanager.debug.log_level) {
+        case DEBUG:
+            if (ret)
+                ft_printf("call to %smalloc(%u)%s, returning %s%p%s\n", ITALIC, size, RESET, GREEN, ret, RESET);
+        case WARNING:
+            if (!ret)
+                ft_printf("call to %smalloc(%u)%s, returning %s%p%s\n", ITALIC, size, RESET, RED, ret, RESET);
+        case ERROR:
             if (!mmanager.is_initialized)
                 ft_printf("%sFailed to initialize mmanager%s\n", RED, RESET);
-            else
-                ft_printf("returning %s%p%s\n", (ret ? GREEN : RED), ret, RESET);
-        }
-        unlock_mutex();
-        return ret;
+        case NONE:
+    }
+
+    unlock_mutex();
+    return ret;
 }
