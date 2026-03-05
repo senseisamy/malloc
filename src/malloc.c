@@ -3,7 +3,7 @@
 mchunk_t* get_first_available_chunk(mzone_t* zone, size_t chunk_size) {
     while (zone) {
         if (!zone->is_full) {
-            for (int i = 0; i < MALLOC_PER_ZONE; ++i) {
+            for (int i = 0; i < CHUNKS_PER_ZONE; ++i) {
                 mchunk_t* chunk = &zone->chunks[i];
                 if (!chunk->in_use)
                     return chunk;

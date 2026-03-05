@@ -39,7 +39,7 @@ size_t round_up_to(size_t a, size_t b) {
 
 mzone_t* malloc_new_zone(size_t chunk_size) {
     size_t aligned_struct_size = round_up_to(sizeof(mzone_t), 16);
-    size_t zone_size = round_up_to(aligned_struct_size + chunk_size * MALLOC_PER_ZONE, PAGE_SIZE);
+    size_t zone_size = round_up_to(aligned_struct_size + chunk_size * CHUNKS_PER_ZONE, PAGE_SIZE);
     mzone_t* mzone = mmap(
         NULL,
         zone_size,
@@ -55,7 +55,7 @@ mzone_t* malloc_new_zone(size_t chunk_size) {
     mzone->size = zone_size;
     mzone->is_full = false;
     void* start_zone_addr = mzone->addr;
-    for (int j = 0; j < MALLOC_PER_ZONE; ++j) {
+    for (int j = 0; j < CHUNKS_PER_ZONE; ++j) {
         mzone->chunks[j].addr = start_zone_addr;
         start_zone_addr += chunk_size;
     }
@@ -97,7 +97,7 @@ bool initialize_mmanager() {
 }
 
 bool is_empty(mzone_t* zone) {
-    for (int i = 0; i < MALLOC_PER_ZONE; ++i)
+    for (int i = 0; i < CHUNKS_PER_ZONE; ++i)
         if (zone->chunks[i].in_use)
             return false;
     return true;
@@ -118,7 +118,7 @@ void show_malloc_mem() {
     while (tiny) {
         if (!is_empty(tiny)) {
             ft_printf("%sTINY ZONE %d:%s %p->%p%s\n", BOLD, zone_count, RESET ITALIC, (void*)tiny, (char*)tiny + tiny->size, RESET);
-            for (int i = 0; i < MALLOC_PER_ZONE; ++i) {
+            for (int i = 0; i < CHUNKS_PER_ZONE; ++i) {
                 mchunk_t* chunk = &tiny->chunks[i];
                 if (chunk->in_use) {
                     void* start = chunk->addr;
@@ -136,7 +136,7 @@ void show_malloc_mem() {
     while (small) {
         if (!is_empty(small)) {
             ft_printf("%sSMALL ZONE %d:%s %p - %p%s\n", BOLD, zone_count, RESET ITALIC, (void*)small, (char*)small + small->size, RESET);
-            for (int i = 0; i < MALLOC_PER_ZONE; ++i) {
+            for (int i = 0; i < CHUNKS_PER_ZONE; ++i) {
                 mchunk_t* chunk = &small->chunks[i];
                 if (chunk->in_use) {
                     void* start = chunk->addr;
@@ -173,6 +173,7 @@ static void dump_memory_on_exit() {
         return;
 
     lock_mutex();
+    // when this function is called FD 1 may already be closed so we have to open it again in order to print
     int tty_fd = open("/dev/tty", O_WRONLY);
     if (!tty_fd)
         return;
@@ -187,11 +188,11 @@ static void dump_memory_on_exit() {
 }
 
 static bool is_in_zone(void* ptr, mzone_t* zone) {
-    return ptr >= zone->chunks[0].addr && ptr <= zone->chunks[MALLOC_PER_ZONE - 1].addr;
+    return ptr >= zone->chunks[0].addr && ptr <= zone->chunks[CHUNKS_PER_ZONE - 1].addr;
 }
 
 static mchunk_t* search_in_zone(void* ptr, mzone_t* zone) {
-    for (int i = 0; i < MALLOC_PER_ZONE; ++i) {
+    for (int i = 0; i < CHUNKS_PER_ZONE; ++i) {
         mchunk_t* chunk = &zone->chunks[i];
         if (chunk->addr == ptr) {
             return chunk;
