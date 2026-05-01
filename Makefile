@@ -7,9 +7,9 @@ OBJS	= $(patsubst src/%.c, $(BIN_DIR)/%.o, $(SRCS))
 
 INCLUDES = src/libft_malloc_internal.h
 
-BIN_DIR = bin
+PRINTF = printf/libftprintf.a
 
-BIN_TEST = malloc_test
+BIN_DIR = bin
 
 ifeq ($(HOSTTYPE),)
 HOSTTYPE := $(shell uname -m)_$(shell uname -s)
@@ -27,13 +27,13 @@ $(BIN_DIR):
 $(BIN_DIR)/%.o: src/%.c $(INCLUDES)
 	$(CC) $(CFLAGS) -o $@ $<
 
-$(NAME): printf ${BIN_DIR} $(OBJS)
+$(NAME): $(PRINTF) ${BIN_DIR} $(OBJS)
 	$(CC) -shared $(OBJS) -o $(NAME) -L./printf -lftprintf
 
 $(NAME_S): $(NAME)
 	ln -s -f $(NAME) libft_malloc.so
 	
-printf:
+$(PRINTF):
 	make -C printf
 
 clean:
@@ -44,14 +44,9 @@ fclean: clean
 	make -C printf fclean
 	rm -rf $(BIN_DIR)
 	rm -f $(NAME)
-	rm -rf $(BIN_TEST)
 	rm -f libft_malloc.so
 
 re: fclean
 	make all
 
-$(BIN_TEST): $(NAME_S)
-	$(CC) -Wall -Wextra -Werror -g3 -o $(BIN_TEST) test_main.c -L./ -lft_malloc
-	LD_LIBRARY_PATH=. ./$(BIN_TEST)
-
-.PHONY: all clean fclean re printf
+.PHONY: all clean fclean re

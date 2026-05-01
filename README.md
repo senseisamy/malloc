@@ -29,6 +29,11 @@ To use this library instead of the libc malloc, it has to be loaded before. This
 LD_PRELOAD=./libft_malloc.so program
 ```
 
+To compile with this shared library you need to use `-lft_malloc` and make sure to launch the program like this (assuming libft_malloc.so is in the current directory):
+```bash
+LD_LIBRARY_PATH=. program
+```
+
 ## Debug environment variable
 
 You can set those environment variable while using the library:
