@@ -135,7 +135,7 @@ void show_malloc_mem() {
     mzone_t* small = mmanager.small_malloc_zones;
     while (small) {
         if (!is_empty(small)) {
-            ft_printf("%sSMALL ZONE %d:%s %p - %p%s\n", BOLD, zone_count, RESET ITALIC, (void*)small, (char*)small + small->size, RESET);
+            ft_printf("%sSMALL ZONE %d:%s %p->%p%s\n", BOLD, zone_count, RESET ITALIC, (void*)small, (char*)small + small->size, RESET);
             for (int i = 0; i < CHUNKS_PER_ZONE; ++i) {
                 mchunk_t* chunk = &small->chunks[i];
                 if (chunk->in_use) {

@@ -6,7 +6,7 @@ SRCS = $(addprefix $(SRCSDIR)/, ft_printf_c.c ft_printf_di.c ft_printf_p.c ft_pr
 OBJS = $(addprefix $(OBJSDIR)/, $(notdir $(SRCS:.c=.o)))
 
 CC = gcc
-CFLAGS = -Wall -Wextra -Werror
+CFLAGS = -Wall -Wextra -Werror -fPIC
 AR = ar rc
 RM = rm -rf
 MKDIR = mkdir -p
